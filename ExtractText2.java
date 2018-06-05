@@ -76,3 +76,48 @@ import edu.cmu.sphinx.api.StreamSpeechRecognizer;
 import edu.cmu.sphinx.result.WordResult;
 import edu.cmu.sphinx.result.Result;
 import edu.cmu.sphinx.util.TimeFrame;
+
+public class SpeechRecognizer {
+	private Log logger = LogFactory.getLog(SpeechRecognizer.class);
+
+	private static Properties props;
+	// address of rabbitmq instance
+	private static String rabbitmqHost; //  = "localhost"
+	private static String rabbitmqURI; // = ""
+
+	// username and password for connecting to rabbitmq
+	private static String rabbitmqUsername; // = null
+	private static String rabbitmqPassword; // = null
+
+	// name showing in rabbitmq queue list
+	private static String exchange; // = "medici"
+	private static String extractorName;
+
+	// array storing message types for acceptable files
+	private static String[] messageTypes; // ="*.file.audio.#","*.file.video.#"
+
+	// paths for CMUSphinx model files
+	private static String acousticModelPath;
+	private static String dictionaryPath;
+	private static String languageModelPath;
+
+	// Date format used in making srt files
+	private static DateFormat dateFormat;
+
+	// Object mapper for reading and writing json
+	private static Object
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
