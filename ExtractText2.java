@@ -105,19 +105,91 @@ public class SpeechRecognizer {
 	private static DateFormat dateFormat;
 
 	// Object mapper for reading and writing json
-	private static Object
+	private static ObjectMapper mapper;
+
+	// Username and password for posting file to dataset
+	private static String postFileUsername;
+	private static String postFilePassword;
+	private static String postBaseFileName;
+	private static String postFileNameExtension;
+
+
+	// Initializing all the static variables for their use in the main
+	// Loads the file named "config.properties" which contains key-val pairs // and loads the vals to their respective variable
+	private static void initialize() throws Exception {
+		props = new Properties();
+		FileInputStream inStream;
+		try {
+			inStream = new FileInputStream("config.properties");
+			props.load(inStream);
+			inStream.close();
+		} catch(FileNotFoundException e) {
+			System.out.println("File was not found!");
+			e.printStackTrace();
+		} catch(IOException e) {
+			System.out.println("IO Exception thrown");
+			e.printStackTrace();
+		}
+		rabbitmqHost = props.getProperty("rabbitmqHost");
+		rabbitmqURI = props.getProperty("rabbitmqURI");
+		extractorName = props.getProperty("extractorName");
+		String messageType = props.getProperty("messageTypes");
+		messageTypes = messageType.split(",");
+		exchange = props.getProperty("exchange");
+		rabbitmqUsername = props.getProperty("rabbitmqUsername");
+		rabbitmqPassword = props.getProperty("rabbitmqPassword");
+		acousticModelPath = props.getProperty("acousticModelPath");
+		dictionaryPath = props.getProperty("dictionaryPath");
+		languageModelPath = props.getProperty("languageModelPath");
+		postFileUsername = props.getProperty("postFileUsername");
+		postFilePassword = props.getProperty("postFilePassword");
+		postBaseFileName = "";
+		dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
+		mapper = new ObjectMapper();
+	}
+
+	public void onMesage(Channel channel, long tag, AMQP.BasicProperties header, String body) {
+		File inputFile = null;
+		String fileId = "";
+		String secretKey = "";
+		String datasetId = "";
+
+		try {
+			@SuppressWarnings("unchecked")
+			Map<String, Object> jbody = mapper.readValue(body, Map.class);
+			System.out.println("JBODY:\n" + jbody + "\n");
+			String host = jbody.get("host").toString();
+			faceId = 
+			secretKey = jbody.get("secretKey").toString();
+			datasetId = jbody.get("datasetId").toString();
+			postBaseFileName = jbody.get("filename").toString();
+			String[] base_ext = postBaseFileName.split("\\.(?=[^\\.]+$");
+			postBaseFileName = base_ext[0];
+			postFileNameExtension = base_ext[1];
+			String intermediateFileId = jbody.get("intermediateId").toString();
+			if (!host.endsWith("/")) {
+				host += "/";
+			}
+			statusUpdate(channel, header, fileId, "Started processing file: " + postBaseFileName + "." + postFileNameExtension);
+			// Download file
+			inputFile = downloadFile(channel, header, host, secretKey, fileId, intermediateFileId);
+
+			// Process file 
+			processFile(channel, header, host, secretKey, fileId, intermediateFileId, inputFile);
+
+			//
+		}
+	}
+
+
+	public void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) throws IOException {
+		Map<String, Object> statusReport = new HashMap<String, Object>();
+		statusReport.put("file_id", fileId);
+		statusReport.put("extractor_id", extractorName);
+		statusReport.put("status", status);
+		statusReport.put("start", dateFormat.format(new Date()));
+
+		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(header.getCorrelationId()).build();
+		channel.basicPublish("", header.getReplyTo(), props, mapper.writeValueAsBytes(statusReport));
+	}
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
