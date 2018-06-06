@@ -199,7 +199,7 @@ public class SpeechRecognizer {
 	}
 
 
-	public void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) throws IOException {
+	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) throws IOException {
 		Map<String, Object> statusReport = new HashMap<String, Object>();
 		statusReport.put("file_id", fileId);
 		statusReport.put("extractor_id", extractorName);
@@ -208,5 +208,12 @@ public class SpeechRecognizer {
 
 		AMQP.BasicProperties props = new AMQP.BasicProperties.Builder().correlationId(header.getCorrelationId()).build();
 		channel.basicPublish("", header.getReplyTo(), props, mapper.writeValueAsBytes(statusReport));
+	}
+
+    /*
+     * Download File from Medici 
+     */
+	private void downloadFile(Channel channel, AMQP.BasicProperties header, String host, String key, String fileId, String intermediateFileId) throws IOException, JSONException, InterruptedException {
+        statusUpdate(channel, header, fileId, "Downloading File");
 	}
 }
