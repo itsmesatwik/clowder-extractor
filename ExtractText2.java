@@ -177,7 +177,24 @@ public class SpeechRecognizer {
 			// Process file 
 			processFile(channel, header, host, secretKey, fileId, intermediateFileId, inputFile);
 
-			//
+			// Send rabbit that we are done
+			channel.basicAck(tag, false);
+		} catch (Throwable arg) {
+			logger.error("Error processing file", arg);
+			try {
+				statusUpdate(channel, header, fileId, "Error processing file: " + arg.getMessage());
+			} catch (IOException e) {
+				logger.warn("Could not sent status update.", e);
+			}
+		} finally {
+			try {
+				statusUpdate(channel, header, fileId, "Done");
+			} catch (IOException e) {
+				logger.warn("Could not sent status update.", e);
+			}
+			if (inputFile != null) {
+				inputFile.delete();
+			}
 		}
 	}
 
