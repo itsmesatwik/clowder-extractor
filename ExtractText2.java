@@ -207,10 +207,8 @@ public class SpeechRecognizer {
      * Send status update to rabbitmq 
      * @param channel rabbitmq channel to send updates over
      * @param header header of incoming message, used for sending responses
-     * @param host the remote host to connect to
-     * @param key the secret key to access clowder
      * @param fileId the id of file to be processed
-     * @param intermediateFileId actual id of the raw file data to process. return the actual file downloaded from the server.
+     * @param status the actual message to send back.
      * @throws IOException if anything goes wrong.
      */
 	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
@@ -238,6 +236,13 @@ public class SpeechRecognizer {
 	private void downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
 		String key, String fileId, String intermediateFileId)
 	throws IOException, JSONException, InterruptedException {
+		URL source = new URL(host + "api/files/" + intermediateFileId + "?key="
+			+ key);
+		String fileType = "";
 
+		// Determine the filetype
+
+		// Saving temp file
+		
 	}
 }
