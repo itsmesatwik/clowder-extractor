@@ -114,9 +114,11 @@ public class SpeechRecognizer {
 	private static String postFileNameExtension;
 
 
-	// Initializing all the static variables for their use in the main
-	// Loads the file named "config.properties" which contains key-val pairs
-	// and loads the vals to their respective variable
+	/** 
+	 * Initializing all the static variables for their use in the main
+	 * Loads the file named "config.properties" which contains key-val pairs
+	 * and loads the vals to their respective variable
+	 */
 	private static void initialize() throws Exception {
 		props = new Properties();
 		FileInputStream inStream;
@@ -232,17 +234,43 @@ public class SpeechRecognizer {
      * @param fileId the id of file to be processed
      * @param intermediateFileId actual id of the raw file data to process. return the actual file downloaded from the server.
      * @throws IOException if anything goes wrong.
+     * @throws UnsupportedOperationsException if the file is not convertable to wav.
      */
-	private void downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
+	private File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
 		String key, String fileId, String intermediateFileId)
-	throws IOException, JSONException, InterruptedException {
+	throws IOException, JSONException, InterruptedException, UnsupportedOperationException {
 		URL source = new URL(host + "api/files/" + intermediateFileId + "?key="
 			+ key);
+		URL metadata = new URL(host + "api/files/" + intermediateFileId + "/metadata");
 		String fileType = "";
+		/*
+			Code for getting file type
+		*/
 
-		// Determine the filetype
+		HttpURLConnection connection = (HttpURLConnection) metadata.openConnection();
+		if (connection.getResponseCode() != 200) {
+			throw new IOException(connection.getResponseMessage());
+		}
+		BufferedReader readMetadata = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		String metadataText = readAll(readMetadata);
+		JSONObject json = new JSONObject(metadataText);
+		fileType = json.getString("filename");
 
-		// Saving temp file
+		File tmpFile = File.createTempFile("medici", "." + fileType);
+		tmpFile.deleteOnExit();
+		FileUtils.copyURLToFile(source,tmpFile);
+
+		String outputFileName = "/tmp/output.wav"
+		// Convert File to Sphinx usable format using ffmpeg cmd line tool
+		String convertCmd = "/root/bin/ffmpeg -i " + tmpFile + " -acodec pcm_s161e -ar 1600 " + outputFileName;
+		try {
+			Process convertFile = Runtime.getRuntime().exec(convertCmd);
+			outputFile = new File(outputFileName);
+		} catch (Exception e) {
+			System.out.print("File not convertable");
+			throw UnsupportedOperationException("File not convertable");
+		}
+		return outputFile;
 		
 	}
 }
