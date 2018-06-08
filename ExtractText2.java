@@ -115,7 +115,8 @@ public class SpeechRecognizer {
 
 
 	// Initializing all the static variables for their use in the main
-	// Loads the file named "config.properties" which contains key-val pairs // and loads the vals to their respective variable
+	// Loads the file named "config.properties" which contains key-val pairs
+	// and loads the vals to their respective variable
 	private static void initialize() throws Exception {
 		props = new Properties();
 		FileInputStream inStream;
@@ -159,7 +160,7 @@ public class SpeechRecognizer {
 			Map<String, Object> jbody = mapper.readValue(body, Map.class);
 			System.out.println("JBODY:\n" + jbody + "\n");
 			String host = jbody.get("host").toString();
-			faceId = 
+			fileId = jbody.get("id").toString();
 			secretKey = jbody.get("secretKey").toString();
 			datasetId = jbody.get("datasetId").toString();
 			postBaseFileName = jbody.get("filename").toString();
@@ -170,11 +171,15 @@ public class SpeechRecognizer {
 			if (!host.endsWith("/")) {
 				host += "/";
 			}
-			statusUpdate(channel, header, fileId, "Started processing file: " + postBaseFileName + "." + postFileNameExtension);
+
 			// Download file
+			statusUpdate(channel, header, fileId, "Started downloading file: " 
+				+ postBaseFileName + "." + postFileNameExtension);
 			inputFile = downloadFile(channel, header, host, secretKey, fileId, intermediateFileId);
 
-			// Process file 
+			// Process file
+			statusUpdate(channel, header, fileId, "Started processing file: " 
+				+ postBaseFileName + "." + postFileNameExtension);
 			processFile(channel, header, host, secretKey, fileId, intermediateFileId, inputFile);
 
 			// Send rabbit that we are done
@@ -198,8 +203,18 @@ public class SpeechRecognizer {
 		}
 	}
 
-
-	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) throws IOException {
+	/**
+     * Send status update to rabbitmq 
+     * @param channel rabbitmq channel to send updates over
+     * @param header header of incoming message, used for sending responses
+     * @param host the remote host to connect to
+     * @param key the secret key to access clowder
+     * @param fileId the id of file to be processed
+     * @param intermediateFileId actual id of the raw file data to process. return the actual file downloaded from the server.
+     * @throws IOException if anything goes wrong.
+     */
+	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
+	throws IOException {
 		Map<String, Object> statusReport = new HashMap<String, Object>();
 		statusReport.put("file_id", fileId);
 		statusReport.put("extractor_id", extractorName);
@@ -210,10 +225,19 @@ public class SpeechRecognizer {
 		channel.basicPublish("", header.getReplyTo(), props, mapper.writeValueAsBytes(statusReport));
 	}
 
-    /*
+    /**
      * Download File from Medici 
+     * @param channel rabbitmq channel to send messages over
+     * @param header header of incoming message, used for sending responses
+     * @param host the remote host to connect to
+     * @param key the secret key to access clowder
+     * @param fileId the id of file to be processed
+     * @param intermediateFileId actual id of the raw file data to process. return the actual file downloaded from the server.
+     * @throws IOException if anything goes wrong.
      */
-	private void downloadFile(Channel channel, AMQP.BasicProperties header, String host, String key, String fileId, String intermediateFileId) throws IOException, JSONException, InterruptedException {
-        statusUpdate(channel, header, fileId, "Downloading File");
+	private void downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
+		String key, String fileId, String intermediateFileId)
+	throws IOException, JSONException, InterruptedException {
+
 	}
 }
