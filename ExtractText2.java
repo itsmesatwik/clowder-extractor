@@ -370,4 +370,33 @@ public class SpeechRecognizer {
 		statusUpdate(channel, header, fileId, "Finished inserting captions");
 		return outputFileName;
 	}
+
+	private String postMetaData(String host, String key, String fileId, Map<String, Object> metadata) throws IOException {
+		URL url = new URL(host + "api/files/" + fileId + "/metadata.jsonld?key=" + key);
+		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+		conn.setRequestMethod("POST");
+		conn.setRequestProperty("Content-Type", "application/json");
+		conn.setDoOutput(true);
+		
+		DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
+		mapper.writeValue((java.io.OutputStream) wr, metadata);
+		wr.flush();
+		wr.close();
+
+		int responseCode = conn.getResponseCode();
+		if (responseCode != 200) {
+			throw (new IOException("Error uploading metadata [code=" + responseCode + "]"));
+		}
+
+		BufferedReader in = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+		String inputLine;
+		StringBuffer response = new StringBuffer();
+
+		while ((inputLine = in.readLine()) != null) {
+			response.append(inputLine);
+		}
+		in.close();
+        logger.debug(response.toString());
+		return response.toString();
+	}
 }
