@@ -288,6 +288,64 @@ public class SpeechRecognizer {
 		String fileName = "file:" + inputFile;
 		recognizer.startRecognition(new URL(fileName).openStream());
 		SpeechResult result;
+		String postSRTFilenameString = postBaseFileName + ".srt";
+		File srt = new File(postSRTFilenameString);
+		String absolutePath = srt.getAbsolutePath();
+		if (srt.exists())
+			srt.delete();
+		srt.createNewFile();
+		BufferedWriter out = new BufferedWriter(new FileWriter(postSRTFilenameString));
+		Map<String, Object> metadata = new HashMap<String, Object>();
+		int numPhrases = 0;
+		while((result = recognizer.getResult() != null)) {
+			numPhrases++;
+			Result script = result.getResult();
+
+			// Generating SRT file from the result
+			out.write(numPhrases+"\r\n");
+			List<WordResult> wrList = script.getTimedBestResult(false);
+			if (!wrList.isEmpty()) {
+
+				// Start time of dialogue
+				TimeFrame startFrame = wrList.getTimeFrame();
+				long milStart = startFrame.getStart();
+				long secStart = TimeUnit.MILLISECONDS.toSeconds(milStart);
+				long minStart = TimeUnit.MILLISECONDS.toMinutes(milStart);
+				long hrStart = TimeUnit.MILLISECONDS.toHours(milStart);
+				milStart -= TimeUnit.MILLISECONDS.toMillis(secStart);
+				// End time of dialogue
+				TimeFrame endFrame = wrList.get(wrList.size()-1).getTimeFrame();
+				long milEnd = startEnd.getStart();
+				long secEnd = TimeUnit.MILLISECONDS.toSeconds(milEnd);
+				long minEnd = TimeUnit.MILLISECONDS.toMinutes(milEnd);
+				long hrEnd = TimeUnit.MILLISECONDS.toHours(milEnd);
+				milEnd -= TimeUnit.MILLISECONDS.toMillis(secEnd);
+				out.write(String.format("%02d:%02d:02d,%d", hrStart, minStart, secStart, milStart));
+				out.write(" --> ");
+				out.write(String.format("%02d:%02d:02d,%d\r\n", hrEnd, minEnd, secEnd, milEnd));
+				for (int i = 0; i < wrList.size(); i++)
+					out.write(wrList.get(i).getWord() + " ");
+				out.write("\r\n\r\n");
+				Sting phraseName = "phrase" + numPhrases;
+				metadata.put(phraseName, result.getNbest);
+			}
+		}
+		out.close();
+		recognizer.stopRecognition();
+		System.out.println("Finished Recognition");
+
+		// Inserting Captions into mp4 files
+		if(postFileNameExtension.equals(mp4)) {
+			statusUpdate(channel, header, fileId, "Inserting Captions");
+			String outputFileName = insertCaptions(postSRTFilenameString, ""+inputFile);
+			System.out.println("Finished Processing\nMetadata: " + metadata);
+			postMetaData(host, key, fileId, metadata);
+			postFile(host, fileId, datasetId, outputFileName);
+		} else {
+			System.out.println("Finished Processing\nMetadata: " + metadata);
+			postMetaData(host, key, fileId, metadata);
+			postFile(host, fileId, datasetId, postSRTFilenameString);
+		}
 		
 	}
 }
