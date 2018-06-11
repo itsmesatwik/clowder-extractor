@@ -377,7 +377,7 @@ public class SpeechRecognizer {
 		conn.setRequestMethod("POST");
 		conn.setRequestProperty("Content-Type", "application/json");
 		conn.setDoOutput(true);
-		
+
 		DataOutputStream wr = new DataOutputStream(conn.getOutputStream());
 		mapper.writeValue((java.io.OutputStream) wr, metadata);
 		wr.flush();
@@ -398,5 +398,45 @@ public class SpeechRecognizer {
 		in.close();
         logger.debug(response.toString());
 		return response.toString();
+	}
+
+	private String postFile(String host, String fildId, String datasetId, String fileName) throws IOException {
+		int MAX_CHUNK = 10*1024*1024;
+		String boundary = Long.toHexSting(new Date().getTime());
+		String postFileUsername = props.getProperty("portFileUsername");
+		String postFilePassword = props.getProperty("portFilePassword");
+		String userPass = postFileUsername + ":" + postFilePassword;
+		String basicAuth = "Basic " + DatatypeConverter.printBase64Binary(userPass.getBytes());
+		InputStream inStream = new FileInputStream(fileName);
+		BufferedInputStream remote = new BufferedInputStream(inStream);
+		URL url = new URL(host + "api/uploadToDataset" + datasetId);
+		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+		connection.setRequestProperty("Authorization", basicAuth);
+		connection.setDoOutput(true);
+		connection.setDoInput(true);
+		connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+		OutputStream output = connection.getOutputStream();
+
+		output.write(("--" + boundary + "\r\n").getBytes());
+		output.write(("Content-Disposition: form-data; name=\"File\"; fileName=\"" + fileName + "\"\r\n").getBytes());
+		output.write(("Content-Type: text/text\r\n\r\n").getBytes());
+
+		byte[] buf = new byte[1024*1024];
+		int len;
+		while ((len = remote.read(buf)) > 0)
+			output.write(buf,0,len);
+		remote.close();
+
+		output.write(("\r\n--" + boundary + "--\r\n").getBytes());
+		output.flush();
+		output.close();
+
+		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+		StringBuilder stringBuild = new StringBuilder();
+		String line;
+		while((line = br.readLine() != null))
+			stringBuild.append(line);
+		bufferRead.close();
+		return stringBuild.toString();
 	}
 }
