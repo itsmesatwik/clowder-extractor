@@ -336,7 +336,6 @@ public class SpeechRecognizer {
 
 		// Inserting Captions into mp4 files
 		if(postFileNameExtension.equals(mp4)) {
-			statusUpdate(channel, header, fileId, "Inserting Captions");
 			String outputFileName = insertCaptions(postSRTFilenameString, ""+inputFile);
 			System.out.println("Finished Processing\nMetadata: " + metadata);
 			postMetaData(host, key, fileId, metadata);
@@ -347,5 +346,28 @@ public class SpeechRecognizer {
 			postFile(host, fileId, datasetId, postSRTFilenameString);
 		}
 		
+	}
+
+	private String insertCaptions(String srtFilename, String inputFileName) throws IOException, InterruptedException {
+		statusUpdate(channel, header, fileId, "Inserting Captions");
+		String outputFileName = postBaseFileName + "_CC." + postFileNameExtension;
+		File outputFile = new File(outputFileName);
+		String absolutePath = outputFile.getAbsolutePath();
+		if(outputFile.exists())
+			outputFile.delete();
+		outputFile.createNewFile();
+		String convertCmd = "/root/bin/ffmpeg -i " + inputFileName + 
+		" -f srt -i " + srtFilename + 
+		" -c:v copy -c:a copy -c:s mov_text -metadata:s language=eng -movflags rtphint " + outputFileName;
+		Process convertOut = Runtime.getRuntime().exec(convertCmd);
+	
+		BufferedReader readProcess = new BufferedReader(new InputStreamReader(convertOut.getInputStream()));
+		String line;
+		while((line = readProcess.readLine()) != null)
+			logger.info(line);
+		readProcess.close();
+		logger.info("Finished inserting captions\n");
+		statusUpdate(channel, header, fileId, "Finished inserting captions");
+		return outputFileName;
 	}
 }
