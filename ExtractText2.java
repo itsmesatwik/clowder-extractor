@@ -288,5 +288,6 @@ public class SpeechRecognizer {
 		String fileName = "file:" + inputFile;
 		recognizer.startRecognition(new URL(fileName).openStream());
 		SpeechResult result;
+		
 	}
 }
