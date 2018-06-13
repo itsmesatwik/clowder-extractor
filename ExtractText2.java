@@ -151,6 +151,14 @@ public class SpeechRecognizer {
 		mapper = new ObjectMapper();
 	}
 
+    /**
+     * Process message received over the message bus
+     * First Download the file from clowder, process the file and send the results back.
+     * @param channel rabbitmq channel for sending messages
+     * @param tag unique id associated with this message
+     * @param header header of the incoming message used for sending response
+     * @param body the actual message
+     */
 	public void onMesage(Channel channel, long tag, AMQP.BasicProperties header, String body) {
 		File inputFile = null;
 		String fileId = "";
