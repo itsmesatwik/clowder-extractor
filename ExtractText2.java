@@ -221,7 +221,7 @@ public class SpeechRecognizer {
      * @param status the actual message to send back.
      * @throws IOException if anything goes wrong.
      */
-	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
+	public void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
 	throws IOException {
 		Map<String, Object> statusReport = new HashMap<String, Object>();
 		statusReport.put("file_id", fileId);
@@ -244,7 +244,7 @@ public class SpeechRecognizer {
      * @throws IOException if anything goes wrong.
      * @throws UnsupportedOperationsException if the file is not convertable to wav.
      */
-	private File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
+	public File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
 		String key, String fileId, String intermediateFileId)
 	throws IOException, JSONException, InterruptedException, UnsupportedOperationException {
 		URL source = new URL(host + "api/files/" + intermediateFileId + "?key="
@@ -270,7 +270,8 @@ public class SpeechRecognizer {
 
 		String outputFileName = "/tmp/output.wav"
 		// Convert File to Sphinx usable format using ffmpeg cmd line tool
-		String convertCmd = "/root/bin/ffmpeg -i " + tmpFile + " -acodec pcm_s161e -ar 1600 " + outputFileName;
+		String convertCmd = "/root/bin/ffmpeg -i " + tmpFile +
+		" -acodec pcm_s161e -ar 1600 " + outputFileName;
 		try {
 			Process convertFile = Runtime.getRuntime().exec(convertCmd);
 			outputFile = new File(outputFileName);
@@ -282,7 +283,8 @@ public class SpeechRecognizer {
 		
 	}
 
-	private void processFile(Channel channel, AMQP.BasicProperties header,
+	
+	public void processFile(Channel channel, AMQP.BasicProperties header,
 		String host, String key, String fileId, String datasetId,
 		String intermediateFileId, File inputFile) throws IOException, InterruptedException {
 		Configuration config = new Configuration();
@@ -356,7 +358,8 @@ public class SpeechRecognizer {
 		
 	}
 
-	private String insertCaptions(String srtFilename, String inputFileName) throws IOException, InterruptedException {
+	public String insertCaptions(String srtFilename, String inputFileName) 
+	throws IOException, InterruptedException {
 		statusUpdate(channel, header, fileId, "Inserting Captions");
 		String outputFileName = postBaseFileName + "_CC." + postFileNameExtension;
 		File outputFile = new File(outputFileName);
@@ -379,7 +382,7 @@ public class SpeechRecognizer {
 		return outputFileName;
 	}
 
-	private String postMetaData(String host, String key, String fileId, Map<String, Object> metadata) throws IOException {
+	public String postMetaData(String host, String key, String fileId, Map<String, Object> metadata) throws IOException {
 		URL url = new URL(host + "api/files/" + fileId + "/metadata.jsonld?key=" + key);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("POST");
@@ -408,7 +411,8 @@ public class SpeechRecognizer {
 		return response.toString();
 	}
 
-	private String postFile(String host, String fildId, String datasetId, String fileName) throws IOException {
+	public String postFile(String host, String fildId, String datasetId, String fileName) 
+	throws IOException {
 		int MAX_CHUNK = 10*1024*1024;
 		String boundary = Long.toHexSting(new Date().getTime());
 		String postFileUsername = props.getProperty("portFileUsername");
@@ -426,7 +430,8 @@ public class SpeechRecognizer {
 		OutputStream output = connection.getOutputStream();
 
 		output.write(("--" + boundary + "\r\n").getBytes());
-		output.write(("Content-Disposition: form-data; name=\"File\"; fileName=\"" + fileName + "\"\r\n").getBytes());
+		output.write(("Content-Disposition: form-data; name=\"File\"; fileName=\"" +
+		fileName + "\"\r\n").getBytes());
 		output.write(("Content-Type: text/text\r\n\r\n").getBytes());
 
 		byte[] buf = new byte[1024*1024];
