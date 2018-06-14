@@ -80,18 +80,12 @@ import edu.cmu.sphinx.util.TimeFrame;
 public class SpeechRecognizer {
 	private Log logger = LogFactory.getLog(SpeechRecognizer.class);
 
-	private static Properties props;
 	// address of rabbitmq instance
-	private static String rabbitmqHost; //  = "localhost"
-	private static String rabbitmqURI; // = ""
-
-	// username and password for connecting to rabbitmq
-	private static String rabbitmqUsername; // = null
-	private static String rabbitmqPassword; // = null
+	private static String rabbitmqURI; // = "localhost"
 
 	// name showing in rabbitmq queue list
-	private static String exchange; // = "medici"
-	private static String extractorName;
+	private static String rabbitExchange; // = "medici"
+	private static String extractorName; // = "speech-recog"
 
 	// array storing message types for acceptable files
 	private static String[] messageTypes; // ="*.file.audio.#","*.file.video.#"
@@ -133,23 +127,64 @@ public class SpeechRecognizer {
 			System.out.println("IO Exception thrown");
 			e.printStackTrace();
 		}
-		rabbitmqHost = props.getProperty("rabbitmqHost");
 		rabbitmqURI = props.getProperty("rabbitmqURI");
+        if (System.getenv("RABBITMQ_URI") != null)
+            rabbitmqURI = System.getenv("RABBITMQ_URI");
 		extractorName = props.getProperty("extractorName");
 		String messageType = props.getProperty("messageTypes");
 		messageTypes = messageType.split(",");
-		exchange = props.getProperty("exchange");
-		rabbitmqUsername = props.getProperty("rabbitmqUsername");
-		rabbitmqPassword = props.getProperty("rabbitmqPassword");
-		acousticModelPath = props.getProperty("acousticModelPath");
-		dictionaryPath = props.getProperty("dictionaryPath");
-		languageModelPath = props.getProperty("languageModelPath");
+		exchange = props.getProperty("exchange", "");
+
+        // If user doesn't provide their own Models we use the default sphinx models
+		acousticModelPath = props.getProperty("acousticModelPath", "/edu/cmu/sphinx/models/en-us/en-us");
+		dictionaryPath = props.getProperty("dictionaryPath", "/edu/cmu/sphinx/models/en-us/cmudict-en-us.dict");
+		languageModelPath = props.getProperty("languageModelPath", "/edu/cmu/sphinx/models/en-us/en-us.lm.bin");
+
 		postFileUsername = props.getProperty("postFileUsername");
 		postFilePassword = props.getProperty("postFilePassword");
 		postBaseFileName = "";
 		dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX");
 		mapper = new ObjectMapper();
 	}
+
+
+    /**
+     * Main function of the program.
+     * @param argv Command line arguments passed to the main.
+     * @throws Exception In case something goes wrong.
+     */
+    public static void main(String[] argv) throws Exception {
+        // Get config.properties
+        initialize();
+        // Set up connection parameters
+        ConnectionFactory factory = new ConnectionFactory();
+        factory.setUri(rabbitmqURI);
+
+        // Connect to rabbitmq
+        Connection connection = factory.newConnection();
+        // Connect to Channel
+        final Channel channel = connection.createChannel();
+        // Declare the queue
+        channel.exchangeDeclare(rabbitExchange, "topic", term);
+        // Connect queue and exchange
+        channel.queueDeclare(extractorName, true, false, false, null);
+        // Create Listener
+        for (String messageType : messageTypes)
+            channel.queueBind(extractorName, rabbitExchange, messageType);
+        channel.basicConsume(extractorName, false, "", new DefaultConsumer(channel) {
+            @Override
+            public void handleDelivery(String consumerTag, Envelope envelope,
+                AMQP.BasicProperties header, byte[] body) throws IOException {
+                SpeechRecognizer we = new ExtractText();
+                we.onMessage(channel, envelope.getDeliveryTag(), header, new String(body));
+            }
+        });
+
+        // Start Listening
+        logger.info("[*] Waiting for messages. To exit press CTRL+C");
+        while(true)
+            Thread.sleep(1000);
+    }
 
     /**
      * Process message received over the message bus
@@ -221,7 +256,7 @@ public class SpeechRecognizer {
      * @param status the actual message to send back.
      * @throws IOException if anything goes wrong.
      */
-	public void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
+	private void statusUpdate(Channel channel, AMQP.BasicProperties header, String fileId, String status) 
 	throws IOException {
 		Map<String, Object> statusReport = new HashMap<String, Object>();
 		statusReport.put("file_id", fileId);
@@ -244,7 +279,7 @@ public class SpeechRecognizer {
      * @throws IOException if anything goes wrong.
      * @throws UnsupportedOperationsException if the file is not convertable to wav.
      */
-	public File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
+	private File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
 		String key, String fileId, String intermediateFileId)
 	throws IOException, JSONException, InterruptedException, UnsupportedOperationException {
 		URL source = new URL(host + "api/files/" + intermediateFileId + "?key="
@@ -283,7 +318,9 @@ public class SpeechRecognizer {
 		
 	}
 
-	
+	/**
+     * 
+     */
 	public void processFile(Channel channel, AMQP.BasicProperties header,
 		String host, String key, String fileId, String datasetId,
 		String intermediateFileId, File inputFile) throws IOException, InterruptedException {
