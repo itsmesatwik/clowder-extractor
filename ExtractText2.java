@@ -101,11 +101,12 @@ public class SpeechRecognizer {
 	// Object mapper for reading and writing json
 	private static ObjectMapper mapper;
 
-	// Username and password for posting file to dataset
+	/*/ Username and password for posting file to dataset
 	private static String postFileUsername;
 	private static String postFilePassword;
 	private static String postBaseFileName;
 	private static String postFileNameExtension;
+    */
 
 
 	/** 
@@ -198,7 +199,6 @@ public class SpeechRecognizer {
 		File inputFile = null;
 		String fileId = "";
 		String secretKey = "";
-		String datasetId = "";
 
 		try {
 			@SuppressWarnings("unchecked")
@@ -207,24 +207,17 @@ public class SpeechRecognizer {
 			String host = jbody.get("host").toString();
 			fileId = jbody.get("id").toString();
 			secretKey = jbody.get("secretKey").toString();
-			datasetId = jbody.get("datasetId").toString();
-			postBaseFileName = jbody.get("filename").toString();
-			String[] base_ext = postBaseFileName.split("\\.(?=[^\\.]+$");
-			postBaseFileName = base_ext[0];
-			postFileNameExtension = base_ext[1];
 			String intermediateFileId = jbody.get("intermediateId").toString();
 			if (!host.endsWith("/")) {
 				host += "/";
 			}
 
 			// Download file
-			statusUpdate(channel, header, fileId, "Started downloading file: " 
-				+ postBaseFileName + "." + postFileNameExtension);
+			statusUpdate(channel, header, fileId, "Started downloading file");
 			inputFile = downloadFile(channel, header, host, secretKey, fileId, intermediateFileId);
 
 			// Process file
-			statusUpdate(channel, header, fileId, "Started processing file: " 
-				+ postBaseFileName + "." + postFileNameExtension);
+			statusUpdate(channel, header, fileId, "Started processing file");
 			processFile(channel, header, host, secretKey, fileId, intermediateFileId, inputFile);
 
 			// Send rabbit that we are done
