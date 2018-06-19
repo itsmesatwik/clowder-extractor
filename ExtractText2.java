@@ -278,7 +278,7 @@ public class SpeechRecognizer {
      */
 	private File downloadFile(Channel channel, AMQP.BasicProperties header, String host, 
 		String key, String fileId, String intermediateFileId)
-	throws IOException, JSONException, InterruptedException, UnsupportedOperationException {
+	throws IOException, JSONException, InterruptedException {
 		URL source = new URL(host + "api/files/" + intermediateFileId + "?key="
 			+ key);
 		URL metadata = new URL(host + "api/files/" + intermediateFileId + "/metadata");
@@ -304,19 +304,22 @@ public class SpeechRecognizer {
 		tmpFile.deleteOnExit();
 		FileUtils.copyURLToFile(source,tmpFile);
 
-		String outputFileName = "/tmp/output.wav"
+		String outputFileName = "/tmp/output.wav";
+        File outputFile = new File(outputFileName);
 		// Convert File to Sphinx usable format using ffmpeg cmd line tool
 		String convertCmd = "/root/bin/ffmpeg -i " + tmpFile +
 		" -acodec pcm_s161e -ar 16000 " + outputFileName;
 		try {
 			Process convertFile = Runtime.getRuntime().exec(convertCmd);
-			File outputFile = new File(outputFileName);
+            // Waiting for the process to actually complete before we return the outputFile
+            while(!outputFile.exists()) {
+                System.out.println("Converting...");
+                Thread.sleep(30);
+            }
 		} catch (Exception e) {
 			System.out.print("File not convertable");
-			throw UnsupportedOperationException("File not convertable");
 		}
 		return outputFile;
-		
 	}
 
 	/**
