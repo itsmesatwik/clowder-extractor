@@ -1,4 +1,4 @@
-/**
+/*
  * TODO:
  * 1. Create system to post result file to dataset without user/pass, secretkey causes permission problems.
  * 2. Create system for persistence users, datasets etc across relaunch of containers
@@ -214,7 +214,11 @@ public class SpeechRecognizer {
 
 			// Download file
 			statusUpdate(channel, header, fileId, "Started downloading file");
-			inputFile = downloadFile(channel, header, host, secretKey, fileId, intermediateFileId);
+            try {
+                inputFile = downloadFile(channel, header, host, secretKey, fileId, intermediateFileId);
+            } catch (Exception e) {
+                logger.warn(e.getMessage(), e);
+            }
 
 			// Process file
 			statusUpdate(channel, header, fileId, "Started processing file");
@@ -289,8 +293,12 @@ public class SpeechRecognizer {
 		}
 		BufferedReader readMetadata = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 		String metadataText = readAll(readMetadata);
+        readMetadata.close();
+        connection.disconnect();
 		JSONObject json = new JSONObject(metadataText);
-		fileType = json.getString("filename");
+		fileType = json.getString("filename").split(".")[1];
+
+        // Save temp file
 
 		File tmpFile = File.createTempFile("medici", "." + fileType);
 		tmpFile.deleteOnExit();
@@ -299,10 +307,10 @@ public class SpeechRecognizer {
 		String outputFileName = "/tmp/output.wav"
 		// Convert File to Sphinx usable format using ffmpeg cmd line tool
 		String convertCmd = "/root/bin/ffmpeg -i " + tmpFile +
-		" -acodec pcm_s161e -ar 1600 " + outputFileName;
+		" -acodec pcm_s161e -ar 16000 " + outputFileName;
 		try {
 			Process convertFile = Runtime.getRuntime().exec(convertCmd);
-			outputFile = new File(outputFileName);
+			File outputFile = new File(outputFileName);
 		} catch (Exception e) {
 			System.out.print("File not convertable");
 			throw UnsupportedOperationException("File not convertable");
