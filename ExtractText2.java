@@ -105,8 +105,8 @@ public class SpeechRecognizer {
 	private static String postFileUsername;
 	private static String postFilePassword;
 	private static String postBaseFileName;
-	private static String postFileNameExtension;
     */
+	private static String postFileNameExtension;
 
 
 	/** 
@@ -296,7 +296,8 @@ public class SpeechRecognizer {
         readMetadata.close();
         connection.disconnect();
 		JSONObject json = new JSONObject(metadataText);
-		fileType = json.getString("filename").split(".")[1];
+		String fileType = json.getString("filename").split(".")[1];
+        postFileNameExtension = new String(fileType);
 
         // Save temp file
 
@@ -323,11 +324,17 @@ public class SpeechRecognizer {
 	}
 
 	/**
-     * 
+     * Process the file using CMUSphinx
+     * @param channel channel for communicating with rabbitmq
+     * @param header
+     * @param host
+     * @param key
+     * @param fileId
+     * @param intermediateFileId
+     * @param inputFile
      */
 	public void processFile(Channel channel, AMQP.BasicProperties header,
-		String host, String key, String fileId, String datasetId,
-		String intermediateFileId, File inputFile) throws IOException, InterruptedException {
+		String host, String key, String fileId, String intermediateFileId, File inputFile) throws IOException, InterruptedException {
 		Configuration config = new Configuration();
 
 		// Set up the configuration to be used by sphinx
@@ -336,10 +343,13 @@ public class SpeechRecognizer {
 		configuration.setLanguageModelPath("resource:"+languageModelPath);
 
 		StreamSpeechRecognizer recognizer = new StreamSpeechRecognizer(configuration);
+
 		String fileName = "file:" + inputFile;
 		recognizer.startRecognition(new URL(fileName).openStream());
+
 		SpeechResult result;
-		String postSRTFilenameString = postBaseFileName + ".srt";
+
+		String postSRTFilenameString = inputFile + ".srt";
 		File srt = new File(postSRTFilenameString);
 		String absolutePath = srt.getAbsolutePath();
 		if (srt.exists())
@@ -386,7 +396,7 @@ public class SpeechRecognizer {
 		System.out.println("Finished Recognition");
 
 		// Inserting Captions into mp4 files
-		if(postFileNameExtension.equals(mp4)) {
+		if(postFileNameExtension.equals("mp4")) {
 			String outputFileName = insertCaptions(postSRTFilenameString, ""+inputFile);
 			System.out.println("Finished Processing\nMetadata: " + metadata);
 			postMetaData(host, key, fileId, metadata);
