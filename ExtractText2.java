@@ -464,6 +464,7 @@ public class SpeechRecognizer {
 
 	public String postFile(String host, String fildId, String datasetId, String fileName) 
 	throws IOException {
+    /*
 		int MAX_CHUNK = 10*1024*1024;
 		String boundary = Long.toHexSting(new Date().getTime());
 		String postFileUsername = props.getProperty("portFileUsername");
@@ -502,5 +503,9 @@ public class SpeechRecognizer {
 			stringBuild.append(line);
 		bufferRead.close();
 		return stringBuild.toString();
+        */
+        /**
+         * Port code from pyclowder2 or wait for response on slack
+         */
 	}
 }
