@@ -333,7 +333,7 @@ public class SpeechRecognizer {
      * @param intermediateFileId
      * @param inputFile
      */
-	public void processFile(Channel channel, AMQP.BasicProperties header,
+	private void processFile(Channel channel, AMQP.BasicProperties header,
 		String host, String key, String fileId, String intermediateFileId, File inputFile) throws IOException, InterruptedException {
 		Configuration config = new Configuration();
 
@@ -409,7 +409,7 @@ public class SpeechRecognizer {
 		
 	}
 
-	public String insertCaptions(String srtFilename, String inputFileName) 
+	private String insertCaptions(String srtFilename, String inputFileName) 
 	throws IOException, InterruptedException {
 		statusUpdate(channel, header, fileId, "Inserting Captions");
 		String outputFileName = postBaseFileName + "_CC." + postFileNameExtension;
@@ -433,7 +433,7 @@ public class SpeechRecognizer {
 		return outputFileName;
 	}
 
-	public String postMetaData(String host, String key, String fileId, Map<String, Object> metadata) throws IOException {
+	private String postMetaData(String host, String key, String fileId, Map<String, Object> metadata) throws IOException {
 		URL url = new URL(host + "api/files/" + fileId + "/metadata.jsonld?key=" + key);
 		HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 		conn.setRequestMethod("POST");
@@ -462,7 +462,7 @@ public class SpeechRecognizer {
 		return response.toString();
 	}
 
-	public String postFile(String host, String fildId, String datasetId, String fileName) 
+	private String postFile(String host, String fildId, String datasetId, String fileName) 
 	throws IOException {
     /*
 		int MAX_CHUNK = 10*1024*1024;
