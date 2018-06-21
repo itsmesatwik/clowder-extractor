@@ -462,50 +462,15 @@ public class SpeechRecognizer {
 		return response.toString();
 	}
 
-	private String postFile(String host, String fildId, String datasetId, String fileName) 
+	private String postFile(String host, String key, String fildId, String datasetId, String fileName) 
 	throws IOException {
-    /*
-		int MAX_CHUNK = 10*1024*1024;
-		String boundary = Long.toHexSting(new Date().getTime());
-		String postFileUsername = props.getProperty("portFileUsername");
-		String postFilePassword = props.getProperty("portFilePassword");
-		String userPass = postFileUsername + ":" + postFilePassword;
-		String basicAuth = "Basic " + DatatypeConverter.printBase64Binary(userPass.getBytes());
-		InputStream inStream = new FileInputStream(fileName);
-		BufferedInputStream remote = new BufferedInputStream(inStream);
-		URL url = new URL(host + "api/uploadToDataset" + datasetId);
-		HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-		connection.setRequestProperty("Authorization", basicAuth);
-		connection.setDoOutput(true);
-		connection.setDoInput(true);
-		connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
-		OutputStream output = connection.getOutputStream();
+        // Following code was taken from
+        // https://stackoverflow.com/questions/2469451/upload-files-from-java-client-to-a-http-server#2469587
+        // for the purposes of using a function not ported to the latest version of JClowder.
+        String boundary = Long.toHexString(System.currentTimeMillis());
+        String charset = "UTF-8";
+        String CRLF = "\r\n";
+        String url = host + "api/uploadToDataset/" + datasetId + "?key=" + key;
 
-		output.write(("--" + boundary + "\r\n").getBytes());
-		output.write(("Content-Disposition: form-data; name=\"File\"; fileName=\"" +
-		fileName + "\"\r\n").getBytes());
-		output.write(("Content-Type: text/text\r\n\r\n").getBytes());
-
-		byte[] buf = new byte[1024*1024];
-		int len;
-		while ((len = remote.read(buf)) > 0)
-			output.write(buf,0,len);
-		remote.close();
-
-		output.write(("\r\n--" + boundary + "--\r\n").getBytes());
-		output.flush();
-		output.close();
-
-		BufferedReader bufferRead = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-		StringBuilder stringBuild = new StringBuilder();
-		String line;
-		while((line = br.readLine() != null))
-			stringBuild.append(line);
-		bufferRead.close();
-		return stringBuild.toString();
-        */
-        /**
-         * Port code from pyclowder2 or wait for response on slack
-         */
 	}
 }
