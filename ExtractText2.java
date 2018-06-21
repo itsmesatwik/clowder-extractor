@@ -404,7 +404,7 @@ public class SpeechRecognizer {
 		} else {
 			System.out.println("Finished Processing\nMetadata: " + metadata);
 			postMetaData(host, key, fileId, metadata);
-			postFile(host, fileId, datasetId, postSRTFilenameString);
+			postFile(host, key, fileId, datasetId, postSRTFilenameString);
 		}
 		
 	}
@@ -466,11 +466,39 @@ public class SpeechRecognizer {
 	throws IOException {
         // Following code was taken from
         // https://stackoverflow.com/questions/2469451/upload-files-from-java-client-to-a-http-server#2469587
-        // for the purposes of using a function not ported to the latest version of JClowder.
+        // for the purposes of using a function for posting files
+        // which was not ported to the latest version of JClowder.
         String boundary = Long.toHexString(System.currentTimeMillis());
         String charset = "UTF-8";
         String CRLF = "\r\n";
         String url = host + "api/uploadToDataset/" + datasetId + "?key=" + key;
+        File uploadFile = new File(fileName);
 
+        URLConnection connection = new URL(url).openConnection();
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+        try {
+            OutputStream output = connection.getOutputStream();
+            PrintWriter writer = new PrintWriter(new OutputStreamWriter(output, charset), true);
+
+            // Upload binary file (captioned media)
+            if (fileName.endsWith(".mp4") {
+                writer.append("--" + boundary).append(CRLF);
+
+            }
+            // Upload .srt file
+            else {
+                writer.append("--" + boundary).append(CRLF);
+                writer.append("Content-Disposition: form-data; name=\"File\"; filename=\"" + 
+                            fileName + "\"").append(CRLF);
+                writer.append("Content-Type: text/plain; charset=" + charset).append(CRLF);
+                Files.copy(uploadFile.toPath(), output);
+                output.flush();
+                writer.append(CRLF).flush();
+                writer.append("--" + boundary + "--").append(CRLF).flush();
+                output.close();
+            }
+        }
 	}
 }
