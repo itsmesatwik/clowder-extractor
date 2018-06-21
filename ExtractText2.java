@@ -495,6 +495,7 @@ public class SpeechRecognizer {
                 output.flush();
                 writer.append(CRLF).flush();
                 writer.append("--" + boundary + "--").append(CRLF).flush();
+                output.close();
             }
             // Upload .srt file
             else {
@@ -509,6 +510,10 @@ public class SpeechRecognizer {
                 writer.append("--" + boundary + "--").append(CRLF).flush();
                 output.close();
             }
+        } catch (Exception e) {
+            System.out.println("Cannot upload file to dataset");
         }
+
+        connection.close();
 	}
 }
