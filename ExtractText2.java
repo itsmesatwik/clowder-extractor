@@ -485,7 +485,16 @@ public class SpeechRecognizer {
             // Upload binary file (captioned media)
             if (fileName.endsWith(".mp4") {
                 writer.append("--" + boundary).append(CRLF);
-
+                writer.append("Content-Disposition: form-data; name=\"File\"; filename=\"" + 
+                        fileName + "\"").append(CRLF);
+                writer.append("Content-Type: " + 
+                        URLConnection.guessContentTypeFromName(uploadFile.getName())).append(CRLF);
+                writer.append("Content-Transfer-Encoding: binary").append(CRLF);
+                writer.append(CRLF).flush();
+                Files.copy(outputFile.toPath(), output);
+                output.flush();
+                writer.append(CRLF).flush();
+                writer.append("--" + boundary + "--").append(CRLF).flush();
             }
             // Upload .srt file
             else {
@@ -493,6 +502,7 @@ public class SpeechRecognizer {
                 writer.append("Content-Disposition: form-data; name=\"File\"; filename=\"" + 
                             fileName + "\"").append(CRLF);
                 writer.append("Content-Type: text/plain; charset=" + charset).append(CRLF);
+                writer.append(CRLF).flush()
                 Files.copy(uploadFile.toPath(), output);
                 output.flush();
                 writer.append(CRLF).flush();
